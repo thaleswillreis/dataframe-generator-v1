@@ -20,12 +20,15 @@ def gerar_dados_cadastrais(n_linhas):
             'data_nascimento': fake.date_of_birth(minimum_age=18, maximum_age=85).strftime('%Y-%m-%d'),
             'email': fake.email(),
             'telefone': fake.phone_number(),
-            'endereco': fake.address(),
+            'rua': fake.street_name(),
+            'numero': str(random.randint(1, 9999)),
+            'bairro': fake.neighborhood(),
             'cidade': fake.city(),
             'estado': fake.state(),
             'pais': 'Brasil',
             'cep': fake.postcode(),
             'genero': random.choice(['M', 'F']),
+            'profissao': fake.job(),
             'data_cadastro': fake.date_between(start_date='-2y', end_date='today').strftime('%Y-%m-%d')
         })
     return pd.DataFrame(data)
@@ -33,7 +36,9 @@ def gerar_dados_cadastrais(n_linhas):
 # Função para gerar dados de vendas
 def gerar_dados_vendas(cadastros_df, n_pedidos):
     # Mapeamento para acesso rápido
-    endereco_map = cadastros_df.set_index('cpf')['endereco'].to_dict()
+    rua_map = cadastros_df.set_index('cpf')['rua'].to_dict()
+    numero_map = cadastros_df.set_index('cpf')['numero'].to_dict()
+    bairro_map = cadastros_df.set_index('cpf')['bairro'].to_dict()
     cidade_map = cadastros_df.set_index('cpf')['cidade'].to_dict()
     estado_map = cadastros_df.set_index('cpf')['estado'].to_dict()
 
@@ -57,6 +62,8 @@ def gerar_dados_vendas(cadastros_df, n_pedidos):
             k=1
         )[0]
 
+        endereco_entrega = f"{rua_map[cpf_cliente]}, {numero_map[cpf_cliente]}, {bairro_map[cpf_cliente]}"
+
         data.append({
             'id_pedido': str(uuid.uuid4()),
             'cpf': cpf_cliente,
@@ -65,7 +72,7 @@ def gerar_dados_vendas(cadastros_df, n_pedidos):
             'valor_desconto': valor_desconto,
             'cupom': cupom,
             'forma_pagamento': forma_pagamento,
-            'endereco_entrega': endereco_map[cpf_cliente],
+            'endereco_entrega': endereco_entrega,
             'cidade_entrega': cidade_map[cpf_cliente],
             'estado_entrega': estado_map[cpf_cliente],
             'pais_entrega': 'Brasil',
@@ -74,24 +81,33 @@ def gerar_dados_vendas(cadastros_df, n_pedidos):
         })
     return pd.DataFrame(data)
 
-# Diretórios de saída
-caminho_cadastros = './data/cadastros/'
-caminho_pedidos = './data/pedidos/'
+# Função principal para processar os dados
+def processar_dados(n_linhas_cadastros, n_pedidos, caminho_base='./data/'):
+    
+    # Diretórios de saída
+    caminho_cadastros = os.path.join(caminho_base, 'cadastros/')
+    caminho_pedidos = os.path.join(caminho_base, 'pedidos/')
 
-# Criar os diretórios, se não existirem
-os.makedirs(caminho_cadastros, exist_ok=True)
-os.makedirs(caminho_pedidos, exist_ok=True)
+    # Criar os diretórios, se não existirem
+    os.makedirs(caminho_cadastros, exist_ok=True)
+    os.makedirs(caminho_pedidos, exist_ok=True)
 
-# Gerar os dados
-cadastros_df = gerar_dados_cadastrais(n_linhas=10000)
-pedidos_df = gerar_dados_vendas(cadastros_df, n_pedidos=5000)
+    # Gerar os DataFrames
+    cadastros_df = gerar_dados_cadastrais(n_linhas=n_linhas_cadastros)
+    pedidos_df = gerar_dados_vendas(cadastros_df, n_pedidos=n_pedidos)
 
-# Salvar em arquivos Parquet
-cadastros_parquet_path = os.path.join(caminho_cadastros, 'cadastros.parquet')
-pedidos_parquet_path = os.path.join(caminho_pedidos, 'pedidos.parquet')
+    # Caminhos dos arquivos Parquet
+    cadastros_parquet_path = os.path.join(caminho_cadastros, 'cadastros.parquet')
+    pedidos_parquet_path = os.path.join(caminho_pedidos, 'pedidos.parquet')
 
-cadastros_df.to_parquet(cadastros_parquet_path, engine='pyarrow', index=False)
-pedidos_df.to_parquet(pedidos_parquet_path, engine='pyarrow', index=False)
+    # Salvar os DataFrames em arquivos Parquet
+    cadastros_df.to_parquet(cadastros_parquet_path, engine='pyarrow', index=False)
+    pedidos_df.to_parquet(pedidos_parquet_path, engine='pyarrow', index=False)
 
-print(f"Dados de cadastros salvos em: {cadastros_parquet_path}")
-print(f"Dados de pedidos salvos em: {pedidos_parquet_path}")
+    # Mensagens de saída
+    print(f"Dados de cadastros salvos em: {cadastros_parquet_path}")
+    print(f"Dados de pedidos salvos em: {pedidos_parquet_path}")
+
+
+# Chamada do método
+processar_dados(n_linhas_cadastros=10000, n_pedidos=5000)
