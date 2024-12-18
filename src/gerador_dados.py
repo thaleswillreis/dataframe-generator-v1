@@ -6,14 +6,26 @@ import uuid
 import random
 import os
 from tqdm import tqdm
+from typing import List, Dict
 
 # Configurações
 fake = Faker('pt_BR')
 
-# Função para gerar dados de cadastro
-def gerar_dados_cadastrais(n_linhas):
+def gerar_dados_cadastrais(n_linhas: int) -> pd.DataFrame:
+    """
+    Gera um DataFrame com dados fictícios de cadastros de pessoas.
+
+    Args:
+        n_linhas (int): Número de registros a serem gerados.
+
+    Returns:
+        pd.DataFrame: DataFrame contendo os dados gerados.
+
+    Raises:
+        RuntimeError: Se ocorrer um erro durante a geração dos dados.
+    """
     try:
-        data = []
+        data: List[Dict[str, str]] = []
         print("Gerando dados de cadastros. Aguarde...")
         for _ in tqdm(range(n_linhas), desc="Gerando cadastros:"):
             genero = random.choice(['M', 'F'])
@@ -40,8 +52,20 @@ def gerar_dados_cadastrais(n_linhas):
     except Exception as e:
         raise RuntimeError(f"Erro ao gerar dados de cadastro: {e}")
 
-# Função para gerar dados de vendas
-def gerar_dados_vendas(cadastros_df, n_pedidos):
+def gerar_dados_vendas(cadastros_df: pd.DataFrame, n_pedidos: int) -> pd.DataFrame:
+    """
+    Gera um DataFrame com dados fictícios de vendas, utilizando os dados de cadastro gerados.
+
+    Args:
+        cadastros_df (pd.DataFrame): DataFrame com dados de cadastros de clientes.
+        n_pedidos (int): Número de pedidos a serem gerados.
+
+    Returns:
+        pd.DataFrame: DataFrame contendo os dados de vendas gerados.
+
+    Raises:
+        RuntimeError: Se ocorrer um erro durante a geração dos dados.
+    """
     try:
         rua_map = cadastros_df.set_index('cpf')['rua'].to_dict()
         numero_map = cadastros_df.set_index('cpf')['numero'].to_dict()
@@ -49,7 +73,7 @@ def gerar_dados_vendas(cadastros_df, n_pedidos):
         cidade_map = cadastros_df.set_index('cpf')['cidade'].to_dict()
         estado_map = cadastros_df.set_index('cpf')['estado'].to_dict()
 
-        data = []
+        data: List[Dict[str, str]] = []
         print("Gerando dados de vendas. Aguarde...")
         for _ in tqdm(range(n_pedidos), desc="Gerando vendas:"):
             cpf_cliente = random.choice(cadastros_df['cpf'])
@@ -93,8 +117,18 @@ def gerar_dados_vendas(cadastros_df, n_pedidos):
     except Exception as e:
         raise RuntimeError(f"Erro ao gerar dados de vendas: {e}")
 
-# Função principal para processar os dados com mensagens de status
-def processar_dados(n_linhas_cadastros, n_pedidos, caminho_base='./data/'):
+def processar_dados(n_linhas_cadastros: int, n_pedidos: int, caminho_base: str = './data/') -> None:
+    """
+    Processa a geração de dados fictícios de cadastros e vendas, salvando em arquivos Parquet.
+
+    Args:
+        n_linhas_cadastros (int): Número de registros de cadastros a serem gerados.
+        n_pedidos (int): Número de registros de vendas a serem gerados.
+        caminho_base (str): Caminho base para salvar os arquivos gerados.
+
+    Raises:
+        RuntimeError: Se ocorrer um erro durante o processamento dos dados.
+    """
     try:
         # Diretórios de saída
         caminho_cadastros = os.path.join(caminho_base, 'cadastros/')
@@ -123,9 +157,9 @@ def processar_dados(n_linhas_cadastros, n_pedidos, caminho_base='./data/'):
     except Exception as e:
         raise RuntimeError(f"Erro durante o processamento dos dados: {e}")
 
-# Chamada do método
-try:
-    processar_dados(n_linhas_cadastros=50000, n_pedidos=50000)
-except RuntimeError as e:
-    print(e)
-
+# Chamada do método principal
+if __name__ == "__main__":
+    try:
+        processar_dados(n_linhas_cadastros=50000, n_pedidos=50000)
+    except RuntimeError as e:
+        print(e)
