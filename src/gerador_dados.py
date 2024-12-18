@@ -13,9 +13,19 @@ fake = Faker('pt_BR')
 def gerar_dados_cadastrais(n_linhas):
     data = []
     for _ in range(n_linhas):
+        # Escolher gênero aleatoriamente
+        genero = random.choice(['M', 'F'])
+        
+        # Gerar nome de acordo com o gênero
+        if genero == 'M':
+            nome = fake.name_male()
+        else:
+            nome = fake.name_female()
+
+        # Criar o registro com nome e gênero correspondentes
         data.append({
             'id': str(uuid.uuid4()),
-            'nome': fake.name(),
+            'nome': nome,
             'cpf': fake.unique.cpf(),
             'data_nascimento': fake.date_of_birth(minimum_age=18, maximum_age=85).strftime('%Y-%m-%d'),
             'email': fake.email(),
@@ -27,11 +37,12 @@ def gerar_dados_cadastrais(n_linhas):
             'estado': fake.state(),
             'pais': 'Brasil',
             'cep': fake.postcode(),
-            'genero': random.choice(['M', 'F']),
+            'genero': genero,
             'profissao': fake.job(),
             'data_cadastro': fake.date_between(start_date='-2y', end_date='today').strftime('%Y-%m-%d')
         })
     return pd.DataFrame(data)
+
 
 # Função para gerar dados de vendas
 def gerar_dados_vendas(cadastros_df, n_pedidos):
