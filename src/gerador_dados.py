@@ -5,6 +5,7 @@ import pyarrow.parquet as pq
 import uuid
 import random
 import os
+from tqdm import tqdm
 
 # Configurações
 fake = Faker('pt_BR')
@@ -13,7 +14,8 @@ fake = Faker('pt_BR')
 def gerar_dados_cadastrais(n_linhas):
     try:
         data = []
-        for _ in range(n_linhas):
+        print("Gerando dados de cadastros. Aguarde...")
+        for _ in tqdm(range(n_linhas), desc="Gerando cadastros:"):
             genero = random.choice(['M', 'F'])
             nome = fake.name_male() if genero == 'M' else fake.name_female()
             data.append({
@@ -48,7 +50,8 @@ def gerar_dados_vendas(cadastros_df, n_pedidos):
         estado_map = cadastros_df.set_index('cpf')['estado'].to_dict()
 
         data = []
-        for _ in range(n_pedidos):
+        print("Gerando dados de vendas. Aguarde...")
+        for _ in tqdm(range(n_pedidos), desc="Gerando vendas:"):
             cpf_cliente = random.choice(cadastros_df['cpf'])
             valor_pedido = round(random.uniform(30, 5000), 2)
             valor_frete = round(random.uniform(10, 150), 2)
@@ -90,7 +93,7 @@ def gerar_dados_vendas(cadastros_df, n_pedidos):
     except Exception as e:
         raise RuntimeError(f"Erro ao gerar dados de vendas: {e}")
 
-# Função principal para processar os dados
+# Função principal para processar os dados com mensagens de status
 def processar_dados(n_linhas_cadastros, n_pedidos, caminho_base='./data/'):
     try:
         # Diretórios de saída
@@ -101,6 +104,7 @@ def processar_dados(n_linhas_cadastros, n_pedidos, caminho_base='./data/'):
         os.makedirs(caminho_cadastros, exist_ok=True)
         os.makedirs(caminho_pedidos, exist_ok=True)
 
+        print("Iniciando a geração de dados...")
         # Gerar os DataFrames
         cadastros_df = gerar_dados_cadastrais(n_linhas=n_linhas_cadastros)
         pedidos_df = gerar_dados_vendas(cadastros_df, n_pedidos=n_pedidos)
@@ -109,11 +113,11 @@ def processar_dados(n_linhas_cadastros, n_pedidos, caminho_base='./data/'):
         cadastros_parquet_path = os.path.join(caminho_cadastros, 'cadastros.parquet')
         pedidos_parquet_path = os.path.join(caminho_pedidos, 'pedidos.parquet')
 
+        print("Salvando os dados...")
         # Salvar os DataFrames em arquivos Parquet
         cadastros_df.to_parquet(cadastros_parquet_path, engine='pyarrow', index=False)
         pedidos_df.to_parquet(pedidos_parquet_path, engine='pyarrow', index=False)
 
-        # Mensagens de saída
         print(f"Dados de cadastros salvos em: {cadastros_parquet_path}")
         print(f"Dados de pedidos salvos em: {pedidos_parquet_path}")
     except Exception as e:
@@ -121,7 +125,7 @@ def processar_dados(n_linhas_cadastros, n_pedidos, caminho_base='./data/'):
 
 # Chamada do método
 try:
-    processar_dados(n_linhas_cadastros=10000, n_pedidos=10000)
+    processar_dados(n_linhas_cadastros=50000, n_pedidos=50000)
 except RuntimeError as e:
     print(e)
 
